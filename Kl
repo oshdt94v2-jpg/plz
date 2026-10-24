@@ -1,0 +1,185 @@
+-- DARK XX Script
+-- Load Rayfield UI Library
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Create Window
+local Window = Rayfield:CreateWindow({
+   Name = "DARK XX",
+   LoadingTitle = "DARK XX Hub Loading...",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "DARK_XX_Config",
+      FileName = "DARK_XX"
+   },
+   Discord = {
+      Enabled = false
+   },
+   KeySystem = false
+})
+
+-- Create Tab
+local MainTab = Window:CreateTab("Main Player", 4483362458) -- Title, Image
+
+-- Variables
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local Flying = false
+local FlySpeed = 50
+local WalkSpeed = 16
+local JumpPower = 50
+
+local BodyVelocity, BodyGyro
+
+-- Function 1: Fly Logic
+local function ToggleFly(State)
+   Flying = State
+   local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+   local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+   local RootPart = Character:FindFirstChild("HumanoidRootPart")
+   
+   if Flying then
+      if not RootPart then return end
+      
+      BodyVelocity = Instance.new("BodyVelocity")
+      BodyGyro = Instance.new("BodyGyro")
+      
+      BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+      BodyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+      BodyVelocity.Parent = RootPart
+      
+      BodyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+      BodyGyro.CFrame = RootPart.CFrame
+      BodyGyro.Parent = RootPart
+      
+      if Humanoid then Humanoid.PlatformStand = true end
+      
+      task.spawn(function()
+         while Flying and RootPart and Character:FindFirstChildOfClass("Humanoid") do
+            local Camera = workspace.CurrentCamera
+            local MoveVector = Vector3.new(0, 0, 0)
+            
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+               MoveVector = MoveVector + Camera.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+               MoveVector = MoveVector - Camera.CFrame.LookVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+               MoveVector = MoveVector - Camera.CFrame.RightVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+               MoveVector = MoveVector + Camera.CFrame.RightVector
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+               MoveVector = MoveVector + Vector3.new(0, 1, 0)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+               MoveVector = MoveVector - Vector3.new(0, 1, 0)
+            end
+            
+            BodyVelocity.Velocity = MoveVector * FlySpeed
+            BodyGyro.CFrame = Camera.CFrame
+            RunService.RenderStepped:Wait()
+         end
+      end)
+   else
+      if BodyVelocity then BodyVelocity:Destroy() end
+      if BodyGyro then BodyGyro:Destroy() end
+      if Humanoid then Humanoid.PlatformStand = false end
+   end
+end
+
+-- Function 2: WalkSpeed Logic
+local function UpdateSpeed()
+   local Character = LocalPlayer.Character
+   if Character and Character:FindFirstChildOfClass("Humanoid") then
+      Character:FindFirstChildOfClass("Humanoid").WalkSpeed = WalkSpeed
+   end
+end
+
+-- Function 3: JumpPower Logic
+local function UpdateJump()
+   local Character = LocalPlayer.Character
+   if Character and Character:FindFirstChildOfClass("Humanoid") then
+      local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+      Humanoid.UseJumpPower = true
+      Humanoid.JumpPower = JumpPower
+   end
+end
+
+-- Auto re-apply on respawn
+LocalPlayer.CharacterAdded:Connect(function(Character)
+   Character:WaitForChild("Humanoid")
+   task.wait(0.5)
+   UpdateSpeed()
+   UpdateJump()
+end)
+
+-- UI Controls
+
+-- SECTION 1: FLY
+MainTab:CreateSection("1. บิน (Fly)")
+
+MainTab:CreateToggle({
+   Name = "เปิด / ปิด บิน (Fly)",
+   CurrentValue = false,
+   Flag = "FlyToggle",
+   Callback = function(Value)
+      ToggleFly(Value)
+   end,
+})
+
+MainTab:CreateSlider({
+   Name = "ความเร็วในการบิน (Fly Speed)",
+   Range = {10, 300},
+   Increment = 5,
+   Suffix = "Speed",
+   CurrentValue = 50,
+   Flag = "FlySpeedSlider",
+   Callback = function(Value)
+      FlySpeed = Value
+   end,
+})
+
+-- SECTION 2: SPEED
+MainTab:CreateSection("2. วิ่งไว (WalkSpeed)")
+
+MainTab:CreateSlider({
+   Name = "ปรับความเร็วการวิ่ง (Walk Speed)",
+   Range = {16, 300},
+   Increment = 1,
+   Suffix = "Speed",
+   CurrentValue = 16,
+   Flag = "WalkSpeedSlider",
+   Callback = function(Value)
+      WalkSpeed = Value
+      UpdateSpeed()
+   end,
+})
+
+-- SECTION 3: JUMP
+MainTab:CreateSection("3. กระโดดสูง (JumpPower)")
+
+MainTab:CreateSlider({
+   Name = "ปรับความสูงการกระโดด (Jump Power)",
+   Range = {50, 500},
+   Increment = 5,
+   Suffix = "Power",
+   CurrentValue = 50,
+   Flag = "JumpPowerSlider",
+   Callback = function(Value)
+      JumpPower = Value
+      UpdateJump()
+   end,
+})
+
+Rayfield:Notify({
+   Title = "DARK XX Loaded!",
+   Content = "สคริปต์ DARK XX พร้อมใช้งานแล้ว",
+   Duration = 5,
+   Image = 4483362458,
+})
